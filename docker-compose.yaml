@@ -1,0 +1,141 @@
+version: "3.7"
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse-server
+    hostname: clickhouse-server
+    ports:
+      - 8123:8123
+      - 9000:9000
+    volumes:
+      - ./db:/var/lib/clickhouse 
+      - ./config:/etc/clickhouse-server/users.d
+    networks:
+      - saman   
+    restart: always   
+
+  redpanda:
+    image: redpandadata/redpanda:latest
+    container_name: redpanda
+    hostname: redpanda
+    command:
+      - redpanda
+      - start
+      - --node-id 0
+      - --smp 1
+      - --memory 1G
+      - --overprovisioned
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092   
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+    ports:
+      - 9092:9092     # redpanda port
+      - 9644:9644     # Admin port
+      - 8082:8082     # Pandaproxy port
+    environment:
+      - REDPANDA_NODE_ID=1
+      - REDPANDA_LISTENERS="EXTERNAL://Ip Server:9092,INTERNAL://0.0.0.0:9092"
+      - REDPANDA_KAFKA_ADVERTISED_LISTENERS="EXTERNAL://172.16.1.210:9092,INTERNAL://redpanda:9092"
+    volumes:
+      - ./redpanda-data:/var/lib/redpanda  
+    networks:
+      - saman
+    restart: always  
+
+  redpanda-connect:
+    image: redpandadata/connect
+    container_name: redpanda-connect
+    hostname: redpanda-connect
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: 'redpanda:9092'
+      CONNECT_REST_ADVERTISED_HOST_NAME: 'connect'
+      CONNECT_GROUP_ID: 1
+      CONNECT_CONFIG_STORAGE_TOPIC: connect_configs
+      CONNECT_STATUS_STORAGE_TOPIC: connect_statuses
+      CONNECT_OFFSET_STORAGE_TOPIC: connect_offsets
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: '1'
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: '1'
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: '1' 
+    ports:
+      - 8083:8083 
+    volumes:
+      - ./config/connect-config-ftp.yaml:/connect.yaml
+    depends_on:
+      - redpanda
+      - redis
+    networks:
+      - saman 
+    restart: always   
+
+  redpanda_console:
+    image:  redpandadata/console:latest
+    container_name: redpanda_console
+    hostname: redpanda_console
+    ports:
+      - 8080:8080
+    environment:
+      kafka_brokers: redpanda:9092
+    depends_on:
+      - redpanda
+    networks:
+      - saman 
+    restart: always   
+  superset:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: superset
+    hostname: superset
+    ports:
+      - 8088:8088
+    environment:
+      - SQLALCHEMY_DATABASE_URI=mysql://superset_user:superset@mysql:3306/superset
+    volumes:
+      - superset_home:/app/superset
+      - ./config/superset_config.py:/app/pythonpath/superset_config.py
+    depends_on:
+      - mysql     
+    networks:
+      - saman 
+    restart: always       
+
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    hostname: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: superset
+      MYSQL_DATABASE: superset
+      MYSQL_USER: superset_user
+      MYSQL_PASSWORD: superset
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - 3306:3306
+    networks:
+      - saman   
+    restart: always    
+  
+  redis:
+    image: redis:latest
+    container_name: redis
+    hostname: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - ./redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - saman  
+
+volumes:
+  superset_home:
+networks:
+  saman:     
+    driver: bridge
