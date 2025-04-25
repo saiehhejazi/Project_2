@@ -22,8 +22,8 @@ services:
       - redpanda
       - start
       - --node-id 0
-      - --smp 1
-      - --memory 1G
+      - --smp 2
+      - --memory 2G
       - --overprovisioned
       - --rpc-addr redpanda:33145
       - --advertise-rpc-addr redpanda:33145
@@ -37,8 +37,8 @@ services:
       - 8082:8082     # Pandaproxy port
     environment:
       - REDPANDA_NODE_ID=1
-      - REDPANDA_LISTENERS="EXTERNAL://Ip Server:9092,INTERNAL://0.0.0.0:9092"
-      - REDPANDA_KAFKA_ADVERTISED_LISTENERS="EXTERNAL://172.16.1.210:9092,INTERNAL://redpanda:9092"
+      - REDPANDA_LISTENERS="EXTERNAL://Your Ip Server:9092,INTERNAL://0.0.0.0:9092"
+      - REDPANDA_KAFKA_ADVERTISED_LISTENERS="EXTERNAL://Your Ip Server:9092,INTERNAL://redpanda:9092"
     volumes:
       - ./redpanda-data:/var/lib/redpanda  
     networks:
