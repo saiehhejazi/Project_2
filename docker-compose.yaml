@@ -9,7 +9,7 @@ services:
       - 9000:9000
     volumes:
       - ./db:/var/lib/clickhouse 
-      - ./config:/etc/clickhouse-server/users.d
+      #- ./config:/etc/clickhouse-server/users.d
     networks:
       - saman   
     restart: always   
