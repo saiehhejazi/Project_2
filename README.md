@@ -46,11 +46,15 @@ In fact, ClickHouse is designed to write huge amounts of data and simultaneously
 
 
 
- It's time for the implementation:
+
+**It's time for the implementation:**
+
 1-	Since all the services are implemented with Docker, it is necessary to install Docker and Docker Compose. Then, using the following command, all the services described above will be brought up:
+
 docker compose up -d
 
 2-	To fully install Superset, you should run the following commands:
+
  docker-compose exec superset superset db upgrade
  docker-compose exec superset superset init
  docker-compose exec superset superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@example.com --password ch@ngeme
@@ -59,12 +63,12 @@ The above commands will ensure that the necessary database for storing users, da
 
 3-	When ClickHouse is installed, a default user named default is created by default. It is recommended to deactivate this user and create another one. To do this, follow these steps:
 
-docker exec -it clickhouse-server bash
+   docker exec -it clickhouse-server bash
    cd /etc/clcikhouse-server
    apt-get update
    apt install nano
-  nano users.xml :
-  (Add These commands ):
+   nano users.xml :
+    (Add These commands ):
    <access_management>1</access_management>
    <named_collection_control>1</named_collection_control>
    <show_named_collections>1</show_named_collections>
@@ -72,16 +76,20 @@ docker exec -it clickhouse-server bash
 
  According : https://clickhouse.com/docs/operations/access-rights#enabling-access- control
 
-After that, use clickhouse-client command :
+ After that, use clickhouse-client command :
+ 
    Use default database;
    CREATE USER 'administrator'    IDENTIFIED BY 'adminpass';
    GRANT ALL ON *.* TO administrator WITH GRANT OPTION;
 
 Then edit docker-compose.yaml and uncomment :
+ 
   - ./config:/etc/clickhouse-server/users.d
+    
 And run “docker compose up -d “ again.
 
 4-	One of the most important sections is the configuration related to redpanda-connect, which is located in the config folder  (connect-config-ftp.yaml). This section is used to connect to the FTP server and read files:
+
 cache_resources:
   - label: red
     redis:
@@ -151,6 +159,60 @@ Finally, we specify the output, which is that the read file should be placed in 
 
 
 6-	Create These Tables in ClickHouse :
+
+  CREATE TABLE default.SMS
+  (
+    `ETL_TIME` String,
+    `Col_1` DateTime64(3),
+    `Col_2` String,
+    `Col_3` DateTime64(3),
+    `Col_4` Int32,
+    `Col_5` Int32,
+    `Col_6` Int32
+  )
+ ENGINE = MergeTree
+ PARTITION BY toYYYYMMDD(Col_1)
+ ORDER BY Col_1
+ SETTINGS index_granularity = 8192;
+
+CREATE TABLE default.Redpanda_SMS
+(
+  `ETL_TIME` String,
+  `Col_1` DateTime64(3),
+  `Col_2` String,
+  `Col_3` DateTime64(3),
+  `Col_4` Int32,
+  `Col_5` Int32,
+  `Col_6` Int32
+)
+ENGINE = Kafka
+SETTINGS kafka_broker_list = 'redpanda:9092',
+ kafka_topic_list = 'sms',
+ kafka_group_name = 'clickhouse',
+ kafka_format = 'JSONEachRow',
+ kafka_num_consumers = 1,
+ kafka_skip_broken_messages = 1;
+
+ CREATE MATERIALIZED VIEW default.MV_SMS TO default.SMS
+ (
+	`ETL_TIME` String,
+    `Col_1` DateTime64(3),
+    `Col_2` String,
+    `Col_3` DateTime64(3),
+    `Col_4` Int32,
+    `Col_5` Int32,
+    `Col_6` Int32
+ )
+ AS SELECT
+    ETL_TIME,
+    Col_1,
+    Col_2,
+    Col_3,
+    Col_4,
+    Col_5,
+    Col_6
+FROM default.Redpanda_SMS
+SETTINGS stream_like_engine_allow_direct_select = 1;
 
 
 
