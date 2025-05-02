@@ -44,3 +44,113 @@ In fact, ClickHouse is designed to write huge amounts of data and simultaneously
 
  Superset is fast, lightweight, intuitive, and loaded with options that make it easy for users of all skill sets to explore and visualize their data, from simple line charts to highly detailed geospatial charts.
 
+
+
+ It's time for the implementation:
+1-	Since all the services are implemented with Docker, it is necessary to install Docker and Docker Compose. Then, using the following command, all the services described above will be brought up:
+docker compose up -d
+
+2-	To fully install Superset, you should run the following commands:
+ docker-compose exec superset superset db upgrade
+ docker-compose exec superset superset init
+ docker-compose exec superset superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@example.com --password ch@ngeme
+
+The above commands will ensure that the necessary database for storing users, dashboards, and other data is created for Superset. Additionally, a user will be created with the specified details.
+
+3-	When ClickHouse is installed, a default user named default is created by default. It is recommended to deactivate this user and create another one. To do this, follow these steps:
+
+docker exec -it clickhouse-server bash
+   cd /etc/clcikhouse-server
+   apt-get update
+   apt install nano
+  nano users.xml :
+  (Add These commands ):
+   <access_management>1</access_management>
+   <named_collection_control>1</named_collection_control>
+   <show_named_collections>1</show_named_collections>
+   <show_named_collections_secrets>1</show_named_collections_secrets>
+
+ According : https://clickhouse.com/docs/operations/access-rights#enabling-access- control
+
+After that, use clickhouse-client command :
+   Use default database;
+   CREATE USER 'administrator'    IDENTIFIED BY 'adminpass';
+   GRANT ALL ON *.* TO administrator WITH GRANT OPTION;
+
+Then edit docker-compose.yaml and uncomment :
+  - ./config:/etc/clickhouse-server/users.d
+And run “docker compose up -d “ again.
+
+4-	One of the most important sections is the configuration related to redpanda-connect, which is located in the config folder  (connect-config-ftp.yaml). This section is used to connect to the FTP server and read files:
+cache_resources:
+  - label: red
+    redis:
+      url: redis://redis:6379
+
+This section is used to store the names of the files that have been processed.
+
+input:
+  label: "ftp_input"
+  sftp:
+    address: "X.X.X.X:22"
+    credentials:
+      username: "XXXX"
+      password: "XXXX"    
+    paths:
+      - "./Protei/3*.log.gz"
+
+This section contains the connection details for the FTP server.
+
+    scanner:
+      decompress:
+        algorithm: "gzip"
+        into:
+          csv:
+            custom_delimiter: ";"
+            parse_header_row: false
+            lazy_quotes: false
+            continue_on_error: false        
+    auto_replay_nacks: true
+    delete_on_finish: false
+    watcher:
+      enabled: true
+      minimum_age: 1m
+      poll_interval: 1s
+      cache: red
+
+In this section, the format for reading the files is specified. Additionally, the files are first extracted from their compressed state and then read. It is important to note that the extracted files are never created on the FTP server; they reside in the server's memory and are deleted as soon as the task is completed.
+
+pipeline:
+  processors:
+    - bloblang: |
+        root = {
+          "Col_1": this.0,
+          "Col_2": this.1,
+          "Col_3": this.2,
+          "Col_4": this.3,
+          "Col_5": this.4,
+          "Col_6": this.5          
+        }
+This section specifies the mapping of the columns
+
+output:
+  broker:
+    pattern: fan_out
+    outputs:
+      - kafka:
+          addresses:
+            - redpanda:9092
+          topic: sms
+          max_in_flight: 1
+          client_id: redpanda_connect
+          compression: snappy
+
+Finally, we specify the output, which is that the read file should be placed in a topic named sms.
+
+5-	In the config folder, in addition to the settings related to redpanda-connect, there are also configurations for Redis, ClickHouse, and Superset.
+
+
+6-	Create These Tables in ClickHouse :
+
+
+
