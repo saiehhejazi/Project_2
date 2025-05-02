@@ -32,71 +32,14 @@ pipeline:
   processors:
     - bloblang: |
         root = {
+          "ETL_TIME": now().ts_format("2006-01-02 15:04:05.999999", "Asia/Tehran"),
           "Col_1": this.0,
           "Col_2": this.1,
           "Col_3": this.2,
           "Col_4": this.3,
           "Col_5": this.4,
           "Col_6": this.5,
-          "Col_7": this.6,
-          "Col_8": this.7,
-          "Col_9": this.8,
-          "Col_10": this.9,
-          "Col_11": this.10,
-          "Col_12": this.11,
-          "Col_13": this.12,
-          "Col_14": this.13,
-          "Col_15": this.14,
-          "Col_16": this.15,
-          "Col_17": this.16,
-          "Col_18": this.17,
-          "Col_19": this.18,
-          "Col_20": this.19,
-          "Col_21": this.20,
-          "Col_22": this.21,
-          "Col_23": this.22,
-          "Col_24": this.23,
-          "Col_25": this.24,
-          "Col_26": this.25,
-          "Col_27": this.26,
-          "Col_28": this.27,
-          "Col_29": this.28,
-          "Col_30": this.29,
-          "Col_31": this.30,
-          "Col_32": this.31,
-          "Col_33": this.32,
-          "Col_34": this.33,
-          "Col_35": this.34,
-          "Col_36": this.35,
-          "Col_37": this.36,
-          "Col_38": this.37,          
-          "Col_40": this.39,
-          "Col_41": this.40,
-          "Col_42": this.41,
-          "Col_43": this.42,
-          "Col_44": this.43,
-          "Col_45": this.44,
-          "Col_46": this.45,
-          "Col_47": this.46,
-          "Col_48": this.47,
-          "Col_49": this.48,
-          "Col_50": this.49,
-          "Col_51": this.50,
-          "Col_52": this.51,
-          "Col_53": this.52,
-          "Col_54": this.53,
-          "Col_55": this.54,
-          "Col_56": this.55,
-          "Col_57": this.56,
-          "Col_58": this.57,
-          "Col_59": this.58,
-          "Col_60": this.59,
-          "Col_61": this.60,
-          "Col_62": this.61,
-          "Col_63": this.62,
-          "Col_64": this.63,
-          "Col_65": this.64,
-          "Col_66": this.65
+          "Col_7": this.6
         }
 output:
   broker:
@@ -106,7 +49,7 @@ output:
           addresses:
             - redpanda:9092
           topic: sms
-          max_in_flight: 1
+          max_in_flight: 5
           client_id: redpanda_connect
           compression: snappy
 
