@@ -63,6 +63,7 @@ The above commands will ensure that the necessary database for storing users, da
 
 3- When ClickHouse is installed, a default user named default is created by default. It is recommended to deactivate this user and create another one. To do this, follow these steps:
 
+
    docker exec -it clickhouse-server bash
    cd /etc/clcikhouse-server
    apt-get update
@@ -78,17 +79,21 @@ The above commands will ensure that the necessary database for storing users, da
 
  After that, use clickhouse-client command :
  
+ 
    Use default database;
-   CREATE USER 'administrator'    IDENTIFIED BY 'adminpass';
+   CREATE USER 'administrator'  IDENTIFIED BY 'adminpass';
    GRANT ALL ON *.* TO administrator WITH GRANT OPTION;
 
 Then edit docker-compose.yaml and uncomment :
+
  
   - ./config:/etc/clickhouse-server/users.d
+  - 
     
 And run “docker compose up -d “ again.
 
 4- One of the most important sections is the configuration related to redpanda-connect, which is located in the config folder  (connect-config-ftp.yaml). This section is used to connect to the FTP server and read files:
+
 
   cache_resources:
      - label: red
@@ -97,15 +102,21 @@ And run “docker compose up -d “ again.
 
 This section is used to store the names of the files that have been processed.
 
-input:
-  label: "ftp_input"
-  sftp:
-    address: "X.X.X.X:22"
+
+ cache_resources:
+  - label: red
+    redis:
+      url: redis://redis:6379
+
+   input:
+   label: "ftp_input"
+   sftp:
+    address: "ip :22"
     credentials:
-      username: "XXXX"
-      password: "XXXX"    
+      username: ""
+      password: ""
     paths:
-      - "./Protei/3*.log.gz"
+      - "./BI/.log.gz"
 
 This section contains the connection details for the FTP server.
 
