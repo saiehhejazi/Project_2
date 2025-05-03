@@ -29,6 +29,7 @@ input:
       poll_interval: 1s
       cache: red
 pipeline:
+  threads: 4 
   processors:
     - bloblang: |
         root = {
