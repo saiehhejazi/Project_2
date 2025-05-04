@@ -99,7 +99,9 @@ Then edit docker-compose.yaml and uncomment :
     
 And run “docker compose up -d “ again.
 
-4- One of the most important sections is the configuration related to redpanda-connect, which is located in the config folder  (connect-config-ftp.yaml). This section is used to connect to the FTP server and read files:
+4- One of the most important sections is the configuration related to redpanda-connect, which is located in the config folder  (connect-config-ftp.yaml).
+
+This section is used to connect to the FTP server and read files:
 
 ```yaml
   cache_resources:
