@@ -162,6 +162,7 @@ pipeline:
   processors:
     - bloblang: |
         root = {
+          "ETL_TIME": now().ts_format("2006-01-02 15:04:05.999999", "Asia/Tehran"),
           "Col_1": this.0,
           "Col_2": this.1,
           "Col_3": this.2,
