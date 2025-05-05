@@ -11,7 +11,7 @@ input:
       username: "XXXX"
       password: "XXXX"    
     paths:
-      - "./Protei/3*.log.gz"
+      - "./BI/*.log.gz"
     scanner:
       decompress:
         algorithm: "gzip"
