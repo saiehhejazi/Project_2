@@ -47,6 +47,8 @@ In fact, ClickHouse is designed to write huge amounts of data and simultaneously
 
 
 
+
+
 **It's time for the implementation:**
 
 1- Since all the services are implemented with Docker, it is necessary to install Docker and Docker Compose. Then, using the following command, all the services described above will be brought up:
@@ -63,6 +65,7 @@ In fact, ClickHouse is designed to write huge amounts of data and simultaneously
   
 
 The above commands will ensure that the necessary database for storing users, dashboards, and other data is created for Superset. Additionally, a user will be created with the specified details.
+
 
 3- When ClickHouse is installed, a default user named default is created by default. It is recommended to deactivate this user and create another one. To do this, follow these steps:
 
@@ -99,9 +102,10 @@ Then edit docker-compose.yaml and uncomment :
     
 And run “docker compose up -d “ again.
 
+
 4- One of the most important sections is the configuration related to redpanda-connect, which is located in the config folder  (connect-config-ftp.yaml).
 
-This section is used to connect to the FTP server and read files:
+This is used to store the names of the files that have been processed.
 
 ```yaml
   cache_resources:
@@ -110,14 +114,11 @@ This section is used to connect to the FTP server and read files:
           url: redis://redis:6379
 ```
 
-This section is used to store the names of the files that have been processed.
+
+
+This section, contains the connection details for the FTP server.
 
 ```yaml
- cache_resources:
-  - label: red
-    redis:
-      url: redis://redis:6379
-
    input:
    label: "ftp_input"
    sftp:
@@ -129,7 +130,8 @@ This section is used to store the names of the files that have been processed.
       - "./BI/*.log.gz"
 ```
 
-This section contains the connection details for the FTP server.
+
+In this section, the format for reading the files is specified. Additionally, the files are first extracted from their compressed state and then read. It is important to note that the extracted files are never created on the FTP server; they reside in the server's memory and are deleted as soon as the task is completed.
 
 ```yaml
     scanner:
@@ -150,10 +152,13 @@ This section contains the connection details for the FTP server.
       cache: red
 ```
 
-In this section, the format for reading the files is specified. Additionally, the files are first extracted from their compressed state and then read. It is important to note that the extracted files are never created on the FTP server; they reside in the server's memory and are deleted as soon as the task is completed.
+
+
+This section specifies the mapping of the columns
 
 ```yaml
 pipeline:
+  threads: 4
   processors:
     - bloblang: |
         root = {
@@ -165,7 +170,9 @@ pipeline:
           "Col_6": this.5          
         }
 ```
-This section specifies the mapping of the columns
+
+
+Finally, we specify the output, which is that the read file should be placed in a topic named sms.
 
 ```yaml
 output:
@@ -176,17 +183,19 @@ output:
           addresses:
             - redpanda:9092
           topic: sms
-          max_in_flight: 1
+          max_in_flight: 5
           client_id: redpanda_connect
           compression: snappy
 ```
 
-Finally, we specify the output, which is that the read file should be placed in a topic named sms.
+
 
 5-	In the config folder, in addition to the settings related to redpanda-connect, there are also configurations for Redis, ClickHouse, and Superset.
 
 
+
 6-	Create These Tables in ClickHouse :
+
 
 ```sql
   CREATE TABLE default.SMS
@@ -242,7 +251,10 @@ SETTINGS kafka_broker_list = 'redpanda:9092',
     Col_6
 FROM default.Redpanda_SMS
 SETTINGS stream_like_engine_allow_direct_select = 1;
+
 ```
+
+The MV_SMS is for reading the content of the SMS topic from redpanda and finally saves it in the SMS table.
 
 
 
