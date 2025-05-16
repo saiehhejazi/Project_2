@@ -1,7 +1,8 @@
 # 🚀 Build a Real-Time Data Pipeline with Redpanda, ClickHouse, and Superset: A Step-by-Step Tutorial
 
 
-[Uploading Medium_Tutorial_Building_a_Real_Time_Data_Pipeline_with_Redpanda.markdown…]()
+![thumbnail](https://github.com/user-attachments/assets/e622a78d-6729-4e13-b125-3ee35dc57f63)
+
 
 
 Welcome to this comprehensive tutorial on building a modern, real-time data pipeline! 🎉 Whether you're a data engineer, analyst, or enthusiast, this guide will walk you through creating a powerful system that processes data from an FTP server, streams it through Redpanda, stores it in ClickHouse, and visualizes it with Superset—all orchestrated with Docker. 🐳 By the end, you'll have a fully functional pipeline with interactive dashboards, perfect for real-time analytics. Let’s dive in! 🔍
